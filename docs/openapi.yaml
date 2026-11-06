@@ -1,0 +1,208 @@
+openapi: 3.0.3
+info:
+  title: Task API
+  version: 1.0.0
+  description: Taskの一覧取得・作成・更新・削除を行うAPIです。
+servers:
+  - url: /
+    description: 現在のAPIサーバー
+tags:
+  - name: Health
+    description: APIとPostgreSQLの稼働確認
+  - name: Tasks
+    description: TaskのCRUD操作
+paths:
+  /api/health:
+    get:
+      tags:
+        - Health
+      summary: APIとPostgreSQLの接続確認
+      responses:
+        '200':
+          description: PostgreSQLに接続できています
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - status
+                properties:
+                  status:
+                    type: string
+                    enum:
+                      - ok
+                    example: ok
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /tasks:
+    get:
+      tags:
+        - Tasks
+      summary: Task一覧を取得
+      responses:
+        '200':
+          description: Task一覧
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags:
+        - Tasks
+      summary: Taskを登録
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTask'
+      responses:
+        '201':
+          description: 登録されたTask
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /tasks/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Taskの正の整数ID
+        schema:
+          type: integer
+          minimum: 1
+    put:
+      tags:
+        - Tasks
+      summary: Taskを更新
+      description: titleとstatusを指定してTaskを置き換えます。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTask'
+      responses:
+        '200':
+          description: 更新されたTask
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags:
+        - Tasks
+      summary: Taskを削除
+      responses:
+        '204':
+          description: 削除成功。レスポンス本文はありません
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+components:
+  schemas:
+    Task:
+      type: object
+      required:
+        - id
+        - title
+        - status
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: integer
+          example: 1
+        title:
+          type: string
+          maxLength: 200
+          example: 買い物
+        status:
+          $ref: '#/components/schemas/TaskStatus'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    TaskStatus:
+      type: string
+      enum:
+        - pending
+        - in_progress
+        - completed
+      example: pending
+    CreateTask:
+      type: object
+      required:
+        - title
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+          example: 買い物
+        status:
+          allOf:
+            - $ref: '#/components/schemas/TaskStatus'
+          default: pending
+    UpdateTask:
+      type: object
+      required:
+        - title
+        - status
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+          example: 買い物
+        status:
+          $ref: '#/components/schemas/TaskStatus'
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          example: Task not found
+  responses:
+    BadRequest:
+      description: リクエストが不正です
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Taskが見つかりません
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    InternalServerError:
+      description: サーバー内部でエラーが発生しました
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
