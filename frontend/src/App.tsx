@@ -1,3 +1,4 @@
+////////
 // ●●React: useState は画面の状態を保持し、useEffect は画面表示後の処理を実行するReactの機能。
 import { useEffect, useState } from 'react'
 import './App.css'
